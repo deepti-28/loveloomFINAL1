@@ -2,9 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:image_picker/image_picker.dart';
-
-// Make sure to import your EditProfilePage from the correct file
-import 'editprofile.dart';  // Adjust the path accordingly
+import 'findthematch.dart';  // Import FindTheMatchPage
+import 'editprofile.dart';  // Import EditProfilePage
 
 class DashboardPage extends StatefulWidget {
   final String? userName;
@@ -19,19 +18,23 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   String? uploadedImagePath;
 
-  get nPage => null;
-
   @override
   void initState() {
     super.initState();
     uploadedImagePath = widget.profileImagePath;
   }
 
-  // Navigates to EditProfilePage and updates profile image path upon return
   void _openEditProfile() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => EditProfilePage(name: nPage, dob: null, initialName: '', initialDob: '',)),
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(
+          name: widget.userName ?? 'User',
+          dob: '',
+          initialName: widget.userName,
+          initialDob: '',
+        ),
+      ),
     );
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
@@ -121,7 +124,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // Remove debug banner by setting in MaterialApp
       body: SafeArea(
         child: Stack(
           children: [
@@ -221,7 +223,12 @@ class _DashboardPageState extends State<DashboardPage> {
                             elevation: 5,
                             padding: const EdgeInsets.symmetric(vertical: 19),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const FindTheMatchPage()),
+                            );
+                          },
                           child: const Text(
                             'Find a match',
                             style: TextStyle(

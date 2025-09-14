@@ -17,7 +17,7 @@ class EditProfilePage extends StatefulWidget {
     this.initialImage,
     this.initialLocation,
     this.initialGalleryImages,
-    this.initialNotes, required initialName, required initialDob,
+    this.initialNotes, required String initialDob, String? initialName,
   }) : super(key: key);
 
   @override
@@ -78,7 +78,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             title: Text("Add Note", style: TextStyle(color: pink)),
             content: TextField(
               autofocus: true,
-              decoration: InputDecoration(hintText: "Write your note here"),
+              decoration: const InputDecoration(hintText: "Write your note here"),
               onChanged: (value) => note = value,
             ),
             actions: [
@@ -137,7 +137,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               contentPadding: EdgeInsets.symmetric(vertical: 3),
             ),
           ),
-          Divider(thickness: 1.05),
+          const Divider(thickness: 1.05),
         ],
       ),
     );
@@ -172,7 +172,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   );
                 }
                 return GestureDetector(
-                  onTap: _navigateToNotePage,  // Navigate to Note page on plus tap
+                  onTap: _navigateToNotePage,
                   child: Container(
                     width: 62,
                     height: 62,

@@ -1,18 +1,23 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final String name;
-  final String dob;
-  final String? profileImageFilePath;
+  final String? name;
+  final String? dob;
+  final String? initialImage;
+  final String? initialLocation;
+  final List<String>? initialGalleryImages;
+  final List<String>? initialNotes;
 
   const EditProfilePage({
     Key? key,
-    required this.name,
-    required this.dob,
-    this.profileImageFilePath,
+    this.name,
+    this.dob,
+    this.initialImage,
+    this.initialLocation,
+    this.initialGalleryImages,
+    this.initialNotes, required initialName, required initialDob,
   }) : super(key: key);
 
   @override
@@ -20,285 +25,289 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final TextEditingController _locationController = TextEditingController();
-  String? _locationError;
-  String? _photoFilePath;
-  bool _noPhoto = false;
+  final Color pink = const Color(0xFFF43045);
+  String? imagePath;
+  List<String> galleryImages = [];
+  List<String> notes = [];
 
-  final Color pink = const Color(0xFFF45D6B);
-  int _selectedNav = 2;
+  late TextEditingController _nameController;
+  late TextEditingController _dobController;
+  late TextEditingController _locationController;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _photoFilePath = widget.profileImageFilePath;
+    imagePath = widget.initialImage;
+    _nameController = TextEditingController(text: widget.name ?? '');
+    _dobController = TextEditingController(text: widget.dob ?? '');
+    _locationController = TextEditingController(text: widget.initialLocation ?? '');
+    galleryImages = List<String>.from(widget.initialGalleryImages ?? []);
+    notes = List<String>.from(widget.initialNotes ?? []);
   }
 
-  void _pickImage() async {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Future<void> _pickImageFromGallery() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        imagePath = picked.path;
+      });
+    }
+  }
+
+  Future<void> _pickGalleryImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        galleryImages.add(picked.path);
+      });
+    }
+  }
+
+  void _navigateToNotePage() {
+    Navigator.pushNamed(context, '/note');
+  }
+
+  void _addNote() {
+    String note = "";
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Add Note", style: TextStyle(color: pink)),
+            content: TextField(
+              autofocus: true,
+              decoration: InputDecoration(hintText: "Write your note here"),
+              onChanged: (value) => note = value,
+            ),
+            actions: [
+              TextButton(
+                child: Text("Add", style: TextStyle(color: pink, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  if (note.trim().isNotEmpty) {
+                    setState(() {
+                      notes.add(note.trim());
+                    });
+                  }
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        });
+  }
+
+  Widget _profileAvatar() {
+    return Container(
+      width: 124,
+      height: 124,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: pink, width: 4),
+        color: pink.withOpacity(0.13),
       ),
-      builder: (context) => SizedBox(
-        height: 180,
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.photo, color: pink),
-              title: Text('Gallery', style: TextStyle(color: pink)),
-              onTap: () async {
-                final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                if (picked != null) {
-                  setState(() {
-                    _noPhoto = false;
-                    _photoFilePath = picked.path;
-                  });
-                }
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.camera_alt, color: pink),
-              title: Text('Camera', style: TextStyle(color: pink)),
-              onTap: () async {
-                final picked = await ImagePicker().pickImage(source: ImageSource.camera);
-                if (picked != null) {
-                  setState(() {
-                    _noPhoto = false;
-                    _photoFilePath = picked.path;
-                  });
-                }
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.person_off, color: pink),
-              title: Text('No Photo', style: TextStyle(color: pink)),
-              onTap: () {
-                setState(() {
-                  _photoFilePath = null;
-                  _noPhoto = true;
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
+      child: GestureDetector(
+        onTap: _pickImageFromGallery,
+        child: CircleAvatar(
+          radius: 56,
+          backgroundColor: Colors.white,
+          backgroundImage: (imagePath != null) ? FileImage(File(imagePath!)) : null,
+          child: (imagePath == null)
+              ? Icon(Icons.person, size: 72, color: Colors.grey[400])
+              : null,
         ),
       ),
     );
   }
 
-  void _onNext() {
-    setState(() {
-      _locationError = _locationController.text.trim().isEmpty ? "Please enter your location" : null;
-    });
-    if (_locationError == null) {
-      // Replace this with your navigation logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Next pressed! Complete your logic.'), backgroundColor: pink),
-      );
-    }
+  Widget _inputSection({required String label, required TextEditingController controller, bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 15, color: Colors.black54, fontWeight: FontWeight.w500)),
+          TextField(
+            controller: controller,
+            style: TextStyle(fontSize: 17.5, fontWeight: bold ? FontWeight.bold : FontWeight.normal, color: Colors.black87),
+            decoration: const InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(vertical: 3),
+            ),
+          ),
+          Divider(thickness: 1.05),
+        ],
+      ),
+    );
   }
 
-  Widget _profileAvatar() {
-    if (_noPhoto || (_photoFilePath == null && widget.profileImageFilePath == null)) {
-      return CircleAvatar(
-        radius: 54,
-        backgroundColor: pink.withOpacity(0.19),
-        child: Icon(Icons.person, color: pink, size: 56),
-      );
-    } else {
-      return CircleAvatar(
-        radius: 54,
-        backgroundColor: pink,
-        backgroundImage: _photoFilePath != null
-            ? Image.file(
-          File(_photoFilePath!),
-          fit: BoxFit.cover,
-        ).image
-            : null,
-      );
-    }
+  Widget _gallerySection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Gallery", style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 15)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 72,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: galleryImages.length + 1,
+              itemBuilder: (context, index) {
+                if (index < galleryImages.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(13),
+                      child: Image.file(
+                        File(galleryImages[index]),
+                        width: 62,
+                        height: 62,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                }
+                return GestureDetector(
+                  onTap: _navigateToNotePage,  // Navigate to Note page on plus tap
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: pink, width: 2),
+                      color: pink.withOpacity(0.09),
+                    ),
+                    child: Icon(Icons.add, color: pink, size: 30),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  BottomNavigationBarItem navIcon(IconData iconData, String label) => BottomNavigationBarItem(
-    icon: Icon(iconData),
-    label: '',
-    tooltip: label,
-  );
+  Widget _notesSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text("Notes", style: TextStyle(fontSize: 15.5, color: Colors.black87)),
+              IconButton(icon: Icon(Icons.add_circle_outline, color: pink, size: 22), onPressed: _addNote),
+            ],
+          ),
+          ...notes.map((note) => Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(note, style: TextStyle(fontSize: 14, color: Colors.black87)),
+          )),
+        ],
+      ),
+    );
+  }
 
-  void _onNavTap(int idx) {
-    setState(() => _selectedNav = idx);
-    // Add your navigation logic per index, for example:
-    // if (idx == 0) Navigator.pushNamed(context, '/home');
-    // if (idx == 1) Navigator.pushNamed(context, '/editprofile');
+  Widget _editPhotoText() {
+    return GestureDetector(
+      onTap: _pickImageFromGallery,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        child: Text(
+          "Edit profile photo",
+          style: TextStyle(color: pink, fontWeight: FontWeight.bold, fontSize: 17),
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomBar() {
+    return Container(
+      height: 62,
+      decoration: BoxDecoration(
+        color: pink,
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(36), topRight: Radius.circular(36)),
+        boxShadow: [BoxShadow(color: pink.withOpacity(0.09), blurRadius: 18, offset: Offset(0, -2))],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          IconButton(icon: Icon(Icons.home, color: Colors.white), onPressed: () => Navigator.pop(context)),
+          IconButton(icon: Icon(Icons.explore, color: Colors.white), onPressed: () {}),
+          IconButton(icon: Icon(Icons.add_circle_outline, color: Colors.white), onPressed: _pickGalleryImage),
+          IconButton(icon: Icon(Icons.chat_bubble_outline, color: Colors.white), onPressed: () {}),
+          IconButton(icon: Icon(Icons.person, color: Colors.white), onPressed: () {}),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          navIcon(Icons.home, 'Home'),
-          navIcon(Icons.edit, 'Edit'),
-          navIcon(Icons.add_circle_outline, 'Add'),
-          navIcon(Icons.notifications_none, 'Notifications'),
-          navIcon(Icons.person, 'Profile'),
-        ],
-        currentIndex: _selectedNav,
-        onTap: _onNavTap,
-        selectedItemColor: pink,
-        unselectedItemColor: Colors.grey[400],
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 12,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new, color: pink),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Center(
-                child: Text(
-                  "Edit profile",
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 19),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 118,
-                      height: 118,
-                      decoration: BoxDecoration(
-                        color: pink.withOpacity(0.25),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: pink, width: 4),
-                      ),
-                    ),
-                    _profileAvatar(),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Text(
-                  "Edit profile photo",
-                  style: TextStyle(
-                    color: pink,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Name",
-                  style: TextStyle(
-                      fontSize: 13.5,
-                      color: Colors.grey[800],
-                      height: 1.1,
-                      fontFamily: 'Nunito'),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.name,
-                  style: const TextStyle(
-                      fontSize: 17.5, fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
-                ),
-              ),
-              Divider(height: 34, thickness: 1.1),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Date of birth",
-                  style: TextStyle(
-                      fontSize: 13.5,
-                      color: Colors.grey[800],
-                      height: 1.1,
-                      fontFamily: 'Nunito'),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.dob,
-                  style: const TextStyle(
-                      fontSize: 17.5, fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
-                ),
-              ),
-              Divider(height: 34, thickness: 1.1),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Location",
-                  style: TextStyle(
-                      fontSize: 13.5,
-                      color: Colors.grey[800],
-                      height: 1.1,
-                      fontFamily: 'Nunito'),
-                ),
-              ),
-              const SizedBox(height: 2),
-              TextField(
-                controller: _locationController,
-                style: const TextStyle(
-                    fontSize: 17.5, fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  errorText: _locationError,
-                ),
-              ),
-              Divider(height: 30, thickness: 1.1),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onNext,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: pink,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    elevation: 6,
-                  ),
-                  child: const Text(
-                    'Next',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 19,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      bottomNavigationBar: _bottomBar(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(50),
+        child: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: pink, size: 26),
+            onPressed: () => Navigator.pop(context),
           ),
+          centerTitle: true,
+          title: Text(
+            "Edit profile",
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 19, color: Colors.black),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, {
+                  'image': imagePath,
+                  'name': _nameController.text,
+                  'dob': _dobController.text,
+                  'location': _locationController.text,
+                  'galleryImages': galleryImages,
+                  'notes': notes,
+                });
+              },
+              child: Text(
+                "Save",
+                style: TextStyle(color: pink, fontWeight: FontWeight.bold, fontSize: 16.5),
+              ),
+            )
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        physics: BouncingScrollPhysics(),
+        padding: EdgeInsets.only(bottom: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 8),
+            Center(
+              child: Column(
+                children: [
+                  _profileAvatar(),
+                  _editPhotoText(),
+                ],
+              ),
+            ),
+            _inputSection(label: "Name", controller: _nameController, bold: true),
+            _inputSection(label: "Date of birth", controller: _dobController, bold: true),
+            _inputSection(label: "Location", controller: _locationController),
+            _gallerySection(),
+            _notesSection(),
+            SizedBox(height: 24),
+          ],
         ),
       ),
     );

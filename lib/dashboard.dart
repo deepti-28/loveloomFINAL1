@@ -1,172 +1,176 @@
-import 'dart:math';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:dotted_border/dotted_border.dart';
+import 'package:image_picker/image_picker.dart';
+
+// Make sure to import your EditProfilePage from the correct file
+import 'editprofile.dart';  // Adjust the path accordingly
 
 class DashboardPage extends StatefulWidget {
-  final String? userName; // Passed from login or fallback
+  final String? userName;
+  final String? profileImagePath;
 
-  const DashboardPage({Key? key, this.userName}) : super(key: key);
+  const DashboardPage({Key? key, this.userName, this.profileImagePath}) : super(key: key);
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
+class _DashboardPageState extends State<DashboardPage> {
+  String? uploadedImagePath;
 
-  final Color pink = const Color(0xFFF45D6B);
-  final Color darkText = const Color(0xFF282828);
+  get nPage => null;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 100),
-      vsync: this,
-    )..repeat();
-    _animation = Tween<double>(begin: 0, end: 2 * pi).animate(_controller);
+    uploadedImagePath = widget.profileImagePath;
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _animatedDottedCircle(double radius) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: DottedCirclePainter(
-            animation: _animation.value,
-            color: pink,
-            dotsCount: 50,
-            radius: radius,
-            dotRadius: 2,
-          ),
-          size: Size(radius * 2, radius * 2),
-        );
-      },
+  // Navigates to EditProfilePage and updates profile image path upon return
+  void _openEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditProfilePage(name: nPage, dob: null, initialName: '', initialDob: '',)),
     );
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        uploadedImagePath = result['image'] ?? uploadedImagePath;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Proper null safety and fallback username
-    final String displayName =
-    (widget.userName ?? '').trim().isEmpty ? 'User' : widget.userName!;
+    final pink = const Color(0xFFF45B62);
+
+    final topRightIcons = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: pink,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.1),
+              boxShadow: [
+                BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
+              ],
+            ),
+            child: const Icon(Icons.add, size: 26, color: Colors.white),
+          ),
+        ),
+        GestureDetector(
+          onTap: _openEditProfile,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: pink,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.1),
+              boxShadow: [
+                BoxShadow(color: pink.withOpacity(0.17), spreadRadius: 8, blurRadius: 20),
+              ],
+            ),
+            child: const Icon(Icons.person, size: 26, color: Colors.white),
+          ),
+        ),
+      ],
+    );
+
+    final profileCircle = Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 178,
+          height: 178,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: pink.withOpacity(0.12),
+          ),
+        ),
+        DottedBorder(
+          dashPattern: const [6, 5],
+          strokeWidth: 3,
+          color: pink,
+          borderType: BorderType.Circle,
+          padding: EdgeInsets.zero,
+          child: CircleAvatar(
+            radius: 87,
+            backgroundColor: Colors.white,
+            backgroundImage: (uploadedImagePath != null) ? FileImage(File(uploadedImagePath!)) : null,
+            child: (uploadedImagePath == null)
+                ? Icon(Icons.person, size: 70, color: Colors.grey[400])
+                : null,
+          ),
+        ),
+        Positioned(
+          bottom: 15,
+          child: CircleAvatar(
+            radius: 25,
+            backgroundColor: pink,
+            child: const Icon(Icons.favorite, color: Colors.white, size: 27),
+          ),
+        ),
+      ],
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        elevation: 10,
-        selectedItemColor: pink,
-        unselectedItemColor: Colors.grey[400],
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.edit), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-        onTap: (index) {
-          if (index == 4) {
-            Navigator.pushNamed(context, '/editprofile', arguments: {
-              'name': displayName,
-            });
-          }
-          // Add other navigation if needed
-        },
-      ),
+      // Remove debug banner by setting in MaterialApp
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              right: -80,
-              top: -90,
-              child: Container(
-                width: 240,
-                height: 220,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(170)),
-                  gradient: LinearGradient(
-                    colors: [pink.withOpacity(0.18), Colors.white],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(width: 1),
-                      const Expanded(
-                        child: Text(
-                          "New Delhi", // Could be dynamic in future
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            color: Colors.black54,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.black87),
-                        iconSize: 28,
-                        onPressed: () {},
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/editprofile',
-                            arguments: {'name': displayName},
-                          );
-                        },
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: pink,
-                          child: const Icon(Icons.person, size: 26, color: Colors.white),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.menu, size: 28, color: Colors.black87),
+                      SizedBox(width: 12),
+                      Text(
+                        "New Delhi",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
                         ),
                       ),
                     ],
                   ),
-                ),
+                  topRightIcons,
+                ],
+              ),
+            ),
+            Column(
+              children: [
+                const SizedBox(height: 90),
                 Padding(
-                  padding: const EdgeInsets.only(left: 35, top: 18),
+                  padding: const EdgeInsets.only(left: 23),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: RichText(
                       text: TextSpan(
-                        children: [
+                        text: "Hi, ",
+                        style: TextStyle(
+                          color: pink,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 26,
+                          fontFamily: 'Nunito',
+                        ),
+                        children: <TextSpan>[
                           TextSpan(
-                            text: 'Hi, ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 27,
-                              color: pink,
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
-                          TextSpan(
-                            text: displayName,
-                            style: TextStyle(
+                            text: widget.userName ?? "User",
+                            style: const TextStyle(
+                              color: Colors.black,
                               fontWeight: FontWeight.w700,
-                              fontSize: 22,
-                              color: darkText,
+                              fontSize: 21,
                               fontFamily: 'Nunito',
                             ),
                           ),
@@ -175,60 +179,35 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Center(
-                  child: SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        _animatedDottedCircle(90),
-                        Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: pink.withOpacity(0.10),
-                          ),
-                          child: const CircleAvatar(
-                            radius: 71,
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.person, color: Colors.grey, size: 85),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 26),
-                Center(
-                  child: RichText(
-                    text: TextSpan(
-                      text: "in this chaos let's find your ",
-                      style: const TextStyle(
+                const SizedBox(height: 25),
+                profileCircle,
+                const SizedBox(height: 40),
+                Column(
+                  children: [
+                    Text(
+                      "in this chaos let's find your",
+                      style: TextStyle(
+                        fontSize: 20,
                         color: Colors.black54,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
                         fontFamily: 'Nunito',
                       ),
-                      children: [
-                        TextSpan(
-                          text: "cosmos!",
-                          style: TextStyle(
-                            color: pink,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
+                      textAlign: TextAlign.center,
                     ),
-                  ),
+                    Text(
+                      "cosmos!",
+                      style: TextStyle(
+                        color: pink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 34),
+                const Spacer(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 37),
                   child: Column(
                     children: [
                       SizedBox(
@@ -236,11 +215,11 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: pink,
-                            elevation: 6,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(33),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 17),
+                            elevation: 5,
+                            padding: const EdgeInsets.symmetric(vertical: 19),
                           ),
                           onPressed: () {},
                           child: const Text(
@@ -248,22 +227,21 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 19,
-                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: pink,
-                            elevation: 5,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(33),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 17),
+                            elevation: 5,
+                            padding: const EdgeInsets.symmetric(vertical: 19),
                           ),
                           onPressed: () {},
                           child: const Text(
@@ -271,58 +249,69 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 19,
-                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
-                const Expanded(child: SizedBox()),
               ],
             ),
           ],
         ),
       ),
+      bottomNavigationBar: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: pink,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(36),
+            topRight: Radius.circular(36),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: pink.withOpacity(0.11),
+              blurRadius: 18,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: const [
+                Icon(Icons.home, size: 26, color: Colors.white),
+                Icon(Icons.explore, size: 26, color: Colors.white),
+                Icon(Icons.search, size: 30, color: Colors.white),
+                Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
+                Icon(Icons.person, size: 26, color: Colors.white),
+              ],
+            ),
+            // Horizontal selection indicator under search icon
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-  }
-}
-
-// Custom painter for animated dotted circle
-class DottedCirclePainter extends CustomPainter {
-  final double animation;
-  final Color color;
-  final int dotsCount;
-  final double radius;
-  final double dotRadius;
-
-  DottedCirclePainter({
-    required this.animation,
-    required this.color,
-    this.dotsCount = 50,
-    required this.radius,
-    required this.dotRadius,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final Paint paint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = color;
-
-    for (int i = 0; i < dotsCount; i++) {
-      final double angle = (2 * pi / dotsCount) * i + animation;
-      final double x = cx + radius * cos(angle);
-      final double y = cy + radius * sin(angle);
-      canvas.drawCircle(Offset(x, y), dotRadius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant DottedCirclePainter oldDelegate) {
-    return oldDelegate.animation != animation;
   }
 }

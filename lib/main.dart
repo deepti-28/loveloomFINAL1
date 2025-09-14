@@ -3,7 +3,8 @@ import 'register.dart';
 import 'dashboard.dart';
 import 'login.dart';
 import 'editprofile.dart';
-import 'splash_page.dart'; // add your splash page widget here
+import 'note.dart'; // Import NotePage
+import 'splash_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LoveLoom',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.pink,
         fontFamily: 'Nunito',
@@ -26,18 +28,23 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/login': (context) => const LoginPage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/note': (context) => const NotePage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/editprofile') {
-          final args = settings.arguments as Map<String, dynamic>;
+          final args = settings.arguments as Map<String, dynamic>? ?? {};
           return MaterialPageRoute(
             builder: (context) => EditProfilePage(
-              name: args['name'] ?? '',
-              dob: args['dob'] ?? '',
+              initialName: args['name'] ?? '',
+              initialDob: args['dob'] ?? '',
+              initialImage: args['image'],
+              initialLocation: args['location'],
+              initialGalleryImages: args['galleryImages'],
+              initialNotes: args['notes'],
             ),
           );
         }
-        return null; // unknown route handler
+        return null;
       },
     );
   }

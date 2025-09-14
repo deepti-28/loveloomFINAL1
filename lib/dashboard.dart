@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:image_picker/image_picker.dart';
 import 'findthematch.dart';  // Import FindTheMatchPage
-import 'editprofile.dart';  // Import EditProfilePage
+import 'editprofile.dart';
+import 'message.dart';  // Import EditProfilePage
 
 class DashboardPage extends StatefulWidget {
   final String? userName;
@@ -289,12 +290,21 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                Icon(Icons.home, size: 26, color: Colors.white),
-                Icon(Icons.explore, size: 26, color: Colors.white),
-                Icon(Icons.search, size: 30, color: Colors.white),
-                Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
-                Icon(Icons.person, size: 26, color: Colors.white),
+              children: [
+                const Icon(Icons.home, size: 26, color: Colors.white),
+                const Icon(Icons.explore, size: 26, color: Colors.white),
+                const Icon(Icons.search, size: 30, color: Colors.white),
+
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MessagePage()),
+                    );
+                  },
+                ),
+                const Icon(Icons.person, size: 26, color: Colors.white),
               ],
             ),
             // Horizontal selection indicator under search icon
